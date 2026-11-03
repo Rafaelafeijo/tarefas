@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import type { listTasks } from "@/server/store";
 import { Feedback, type FeedbackState } from "./feedback";
@@ -18,8 +18,29 @@ export function TaskList({ initialPage }: { initialPage: ReturnType<typeof listT
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const utils = trpc.useUtils();
 
-  // First paint uses the SSR data; from there the client owns the list.
-  const { data } = trpc.tasks.list.useQuery({ limit: 10 }, { initialData: initialPage });
+  // The SSR result is page 1, so the first paint has data; the client appends the rest.
+  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    trpc.tasks.list.useInfiniteQuery(
+      { limit: 10 },
+      {
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+        initialData: { pages: [initialPage], pageParams: [null] },
+      },
+    );
+
+  // IntersectionObserver is native and enough here; no scroll library needed.
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasNextPage || isFetchingNextPage) return;
+    if (typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) fetchNextPage();
+    });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const deleteTask = trpc.tasks.delete.useMutation({
     onSuccess: async () => {
@@ -29,7 +50,7 @@ export function TaskList({ initialPage }: { initialPage: ReturnType<typeof listT
     onError: (error) => setFeedback({ kind: "error", message: error.message }),
   });
 
-  const items = data?.items ?? [];
+  const items = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <>
@@ -75,6 +96,21 @@ export function TaskList({ initialPage }: { initialPage: ReturnType<typeof listT
           </ul>
         )}
       </section>
+
+      <div ref={sentinelRef} />
+      <div className="py-[15px] text-center text-sm text-muted">
+        {error && <p role="alert" className="mb-2 text-danger">{error.message}</p>}
+        {isFetchingNextPage ? (
+          <p role="status">Loading more...</p>
+        ) : hasNextPage ? (
+          // Fallback for browsers without IntersectionObserver, and retry after an error.
+          <button type="button" className="btn btn-link" onClick={() => fetchNextPage()}>
+            Load more
+          </button>
+        ) : (
+          items.length > 0 && <p>You&apos;ve reached the end</p>
+        )}
+      </div>
     </>
   );
 }
