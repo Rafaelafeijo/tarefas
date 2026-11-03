@@ -82,6 +82,7 @@ All procedures are under `tasks`:
 - **Fixed locale and time zone for dates**: server and browser render the same text, which avoids hydration errors.
 - **Native `IntersectionObserver`**: enough for infinite scroll, with a "Load more" button as fallback.
 - **No route-level `loading.tsx`**: the store answers instantly, and it would make missing tasks respond with status 200 instead of 404.
+- **`postcss` override in `package.json`**: Next 15 pins a version with known advisories; the override moves it to a patched one without leaving Next 15.
 - **Seed data**: 25 fictional tasks, so the list and infinite scroll work on first run.
 - **Portuguese field names**: `titulo`, `descricao` and `dataCriacao` are the domain vocabulary; everything else is in English.
 - **No component library or auth**: not needed for an app of this size.
