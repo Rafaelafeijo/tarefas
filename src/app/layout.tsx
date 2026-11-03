@@ -14,8 +14,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${anekLatin.variable} ${roboto.variable} ${sora.variable} antialiased`}>
+    // Font variables go on <html>: the theme tokens in globals.css resolve them at :root.
+    <html lang="en" className={`${anekLatin.variable} ${roboto.variable} ${sora.variable}`}>
+      <body className="antialiased">
         <TRPCProvider>
           <main className="mx-auto max-w-3xl px-[15px] py-[30px]">{children}</main>
         </TRPCProvider>

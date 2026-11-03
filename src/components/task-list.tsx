@@ -43,11 +43,10 @@ export function TaskList({ initialPage }: { initialPage: ReturnType<typeof listT
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const deleteTask = trpc.tasks.delete.useMutation({
-    onSuccess: async () => {
-      setFeedback({ kind: "success", message: "Task deleted." });
-      await utils.tasks.list.invalidate();
-    },
+    onSuccess: () => setFeedback({ kind: "success", message: "Task deleted." }),
     onError: (error) => setFeedback({ kind: "error", message: error.message }),
+    // Also after errors: if the task was already deleted elsewhere, its row must go away.
+    onSettled: () => utils.tasks.list.invalidate(),
   });
 
   const items = data?.pages.flatMap((page) => page.items) ?? [];
