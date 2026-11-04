@@ -1,4 +1,4 @@
-import type { TaskInput } from "@/lib/task-schema";
+import type { TaskInput, TaskUpdate } from "@/lib/task-schema";
 
 // Field names are in Portuguese by design; they are the app's domain vocabulary.
 export type Task = {
@@ -11,49 +11,41 @@ export type Task = {
 
 type Store = { tasks: Map<string, Task>; nextId: number };
 
-const SEED_TITLES = [
-  "Review sprint backlog",
-  "Update project roadmap",
-  "Prepare weekly status report",
-  "Fix broken link in documentation",
-  "Plan next team retrospective",
-  "Clean up unused feature flags",
-  "Write onboarding checklist",
-  "Book meeting room for planning",
-  "Refactor date formatting helper",
-  "Check accessibility of main menu",
-  "Draft release notes",
-  "Archive completed projects",
-  "Review open pull requests",
-  "Update dependencies",
-  "Organize shared drive folders",
-  "Add empty state to reports page",
-  "Test checkout flow on mobile",
-  "Summarize customer feedback",
-  "Rotate staging credentials",
-  "Improve search result ordering",
-  "Schedule database maintenance window",
-  "Document deployment process",
-  "Investigate slow dashboard query",
-  "Replace outdated screenshots",
-  "Order new office supplies",
+const SEED_COUNT = 100;
+const SEED_VERBS = ["Review", "Update", "Document", "Test", "Plan", "Clean up", "Audit", "Simplify", "Prepare", "Share"];
+const SEED_SUBJECTS = [
+  "the sprint backlog",
+  "the project roadmap",
+  "the weekly status report",
+  "the onboarding checklist",
+  "the release notes",
+  "the checkout flow",
+  "the search results page",
+  "the customer feedback summary",
+  "the deployment process",
+  "the reports dashboard",
+  "the shared drive folders",
 ];
 
 function createSeededStore(): Store {
   const tasks = new Map<string, Task>();
-  const hour = 60 * 60 * 1000;
+  const hoursBetweenTasks = 7;
 
-  SEED_TITLES.forEach((titulo, index) => {
+  for (let index = 0; index < SEED_COUNT; index++) {
     const id = String(index + 1);
+    // 10 verbs and 11 subjects share no factor, so every combination is unique.
+    const titulo = `${SEED_VERBS[index % SEED_VERBS.length]} ${SEED_SUBJECTS[index % SEED_SUBJECTS.length]}`;
+    const hoursAgo = (SEED_COUNT - index) * hoursBetweenTasks;
+
     tasks.set(id, {
       id,
       titulo,
       descricao: index % 3 === 0 ? "Sample task created at startup." : undefined,
-      dataCriacao: new Date(Date.now() - (SEED_TITLES.length - index) * hour).toISOString(),
+      dataCriacao: new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString(),
     });
-  });
+  }
 
-  return { tasks, nextId: SEED_TITLES.length + 1 };
+  return { tasks, nextId: SEED_COUNT + 1 };
 }
 
 // On globalThis because a plain module variable would be reset by hot reload in dev,
@@ -94,8 +86,8 @@ export function createTask(input: TaskInput) {
   return task;
 }
 
-// Replaces the editable fields: omitting descricao clears it.
-export function updateTask(id: string, input: TaskInput) {
+// Omitting descricao clears it; omitting dataCriacao keeps the current date.
+export function updateTask(id: string, input: TaskUpdate) {
   const existing = store.tasks.get(id);
   if (!existing) return undefined;
 
@@ -103,6 +95,7 @@ export function updateTask(id: string, input: TaskInput) {
     ...existing,
     titulo: input.titulo,
     descricao: input.descricao || undefined,
+    dataCriacao: input.dataCriacao ?? existing.dataCriacao,
   };
   store.tasks.set(id, updated);
   return updated;

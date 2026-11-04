@@ -9,4 +9,11 @@ export const taskInputSchema = z.object({
   descricao: z.string().trim().optional(),
 });
 
+export const taskUpdateSchema = taskInputSchema.extend({
+  id: z.string(),
+  // Optional: leaving it out keeps the current date.
+  dataCriacao: z.iso.datetime({ error: "Invalid date and time" }).optional(),
+});
+
 export type TaskInput = z.infer<typeof taskInputSchema>;
+export type TaskUpdate = Omit<z.infer<typeof taskUpdateSchema>, "id">;

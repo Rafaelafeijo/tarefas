@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { taskInputSchema } from "@/lib/task-schema";
+import { taskInputSchema, taskUpdateSchema } from "@/lib/task-schema";
 import { createTask, deleteTask, getTask, listTasks, updateTask } from "../store";
 import { publicProcedure, router } from "../trpc";
 
@@ -30,7 +30,7 @@ export const tasksRouter = router({
   create: publicProcedure.input(taskInputSchema).mutation(({ input }) => createTask(input)),
 
   update: publicProcedure
-    .input(taskInputSchema.extend(idSchema.shape))
+    .input(taskUpdateSchema)
     .mutation(({ input: { id, ...fields } }) => {
       const task = updateTask(id, fields);
       if (!task) throw notFound(id);

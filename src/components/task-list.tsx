@@ -2,23 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { formatDateTime } from "@/lib/date";
+import { errorMessage } from "@/lib/error-message";
 import { trpc } from "@/lib/trpc/client";
 import type { listTasks } from "@/server/store";
 import { Feedback, type FeedbackState } from "./feedback";
 import { PencilIcon, TrashIcon } from "./icons";
 import { QuickAdd } from "./quick-add";
 
-// Fixed locale and time zone: server and browser must format the date identically,
-// otherwise React reports a hydration mismatch.
-const dateFormat = new Intl.DateTimeFormat("en-US", {
-  dateStyle: "medium",
-  timeZone: "America/Sao_Paulo",
-});
-
 // Only visible on hover where hovering exists; always visible on touch screens.
 const rowActions =
   "flex items-center justify-end gap-0.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100";
-const rowColumns = "grid grid-cols-[1fr_auto] items-center gap-3 sm:grid-cols-[1fr_110px_64px]";
+const rowColumns = "grid grid-cols-[1fr_auto] items-center gap-3 sm:grid-cols-[1fr_170px_64px]";
 
 export function TaskList({ initialPage }: { initialPage: ReturnType<typeof listTasks> }) {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
@@ -50,7 +45,7 @@ export function TaskList({ initialPage }: { initialPage: ReturnType<typeof listT
 
   const deleteTask = trpc.tasks.delete.useMutation({
     onSuccess: () => setFeedback({ kind: "success", message: "Task deleted." }),
-    onError: (error) => setFeedback({ kind: "error", message: error.message }),
+    onError: (error) => setFeedback({ kind: "error", message: errorMessage(error) }),
     // Also after errors: if the task was already deleted elsewhere, its row must go away.
     onSettled: () => utils.tasks.list.invalidate(),
   });
@@ -67,7 +62,7 @@ export function TaskList({ initialPage }: { initialPage: ReturnType<typeof listT
           To do
         </span>
         <span className="text-[13px] text-muted">
-          {total} {total === 1 ? "task" : "tasks"}
+          Showing {items.length} of {total} {total === 1 ? "task" : "tasks"}
         </span>
       </div>
 
@@ -106,13 +101,11 @@ export function TaskList({ initialPage }: { initialPage: ReturnType<typeof listT
                     {task.descricao && (
                       <p className="truncate text-[13px] text-muted">{task.descricao}</p>
                     )}
-                    <p className="text-xs text-muted sm:hidden">
-                      {dateFormat.format(new Date(task.dataCriacao))}
-                    </p>
+                    <p className="text-xs text-muted sm:hidden">{formatDateTime(task.dataCriacao)}</p>
                   </div>
                 </div>
                 <time dateTime={task.dataCriacao} className="hidden text-[13px] text-muted sm:block">
-                  {dateFormat.format(new Date(task.dataCriacao))}
+                  {formatDateTime(task.dataCriacao)}
                 </time>
                 <div className={rowActions}>
                   <Link href={`/tasks/${task.id}/edit`} aria-label={`Edit ${task.titulo}`} className="icon-btn">
@@ -136,7 +129,7 @@ export function TaskList({ initialPage }: { initialPage: ReturnType<typeof listT
 
       <div ref={sentinelRef} />
       <div className="py-4 text-center text-[13px] text-muted">
-        {error && <p role="alert" className="mb-2 text-danger">{error.message}</p>}
+        {error && <p role="alert" className="mb-2 text-danger">{errorMessage(error)}</p>}
         {isFetchingNextPage ? (
           <p role="status">Loading more...</p>
         ) : hasNextPage ? (
