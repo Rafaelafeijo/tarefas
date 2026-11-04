@@ -1,5 +1,4 @@
 import { TRPCError } from "@trpc/server";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TaskForm } from "@/components/task-form";
 import { serverCaller } from "@/lib/trpc/server";
@@ -18,12 +17,5 @@ export default async function EditTaskPage({ params }: { params: Promise<{ id: s
   // Loading on the server: the form is filled on first paint and a bad id is a real 404.
   const task = await loadTask(id);
 
-  return (
-    <>
-      <Link href="/" className="back-link">
-        ← Back to tasks
-      </Link>
-      <TaskForm mode="edit" task={task} />
-    </>
-  );
+  return <TaskForm mode="edit" task={task} />;
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PlusIcon } from "@/components/icons";
 import { TaskList } from "@/components/task-list";
 import { serverCaller } from "@/lib/trpc/server";
 
@@ -11,9 +12,10 @@ export default async function HomePage() {
 
   return (
     <>
-      <header className="mb-[15px] flex items-center justify-between">
-        <h1>Tasks</h1>
+      <header className="mb-5 flex items-center justify-between gap-3">
+        <h1>All tasks</h1>
         <Link href="/tasks/new" className="btn btn-primary">
+          <PlusIcon size={15} />
           New task
         </Link>
       </header>

@@ -75,7 +75,7 @@ export function listTasks({ cursor, limit }: { cursor?: string | null; limit: nu
   const items = remaining.slice(0, limit);
   const nextCursor = remaining.length > limit ? items[items.length - 1].id : null;
 
-  return { items, nextCursor };
+  return { items, nextCursor, total: store.tasks.size };
 }
 
 export function getTask(id: string) {

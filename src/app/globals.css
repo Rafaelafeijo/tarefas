@@ -1,72 +1,96 @@
 @import "tailwindcss";
 
-/* @theme turns each token into a CSS variable and a utility class (bg-navy, text-muted...). */
+/* @theme turns each token into a CSS variable and a utility class (bg-accent, text-muted...). */
 @theme inline {
-  --color-navy: #0b2a4a;
-  --color-blue: #1f5fa8;
-  --color-blue-soft: #e8f0fa;
-  --color-bg: #f2f2f2;
+  --color-ink: #292d34;
+  --color-muted: #6f7782;
+  --color-accent: #6a5ae0;
+  --color-accent-strong: #5646c9;
+  --color-accent-soft: #f0eeff;
   --color-card: #ffffff;
-  --color-border: #dde3ea;
-  --color-muted: #6b7280;
-  --color-danger: #ef4343;
+  --color-sidebar: #f8f9fb;
+  --color-hover: #f7f8fa;
+  --color-border: #e8eaef;
+  --color-danger: #d92d3a;
+  --color-danger-soft: #fdecee;
 
-  --font-heading: var(--font-anek-latin);
-  --font-body: var(--font-roboto);
-  --font-label: var(--font-sora);
+  --font-sans: var(--font-inter);
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-navy);
-  font-family: var(--font-body);
+  background: var(--color-card);
+  color: var(--color-ink);
+  font-family: var(--font-inter);
+  font-size: 14px;
 }
 
 h1 {
-  font-family: var(--font-heading);
-  font-size: 1.75rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-.card {
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* Shared by <button> and <a>, so these stay plain classes instead of a component. */
 .btn {
-  display: inline-block;
-  padding: 8px 15px;
-  font-family: var(--font-label);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 120ms;
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
 .btn-primary {
-  background: var(--color-navy);
+  background: var(--color-accent);
   color: #ffffff;
 }
 
-.btn-link {
-  color: var(--color-blue);
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-strong);
 }
 
-.btn-danger {
+.btn-ghost {
+  color: var(--color-muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-hover);
+  color: var(--color-ink);
+}
+
+.icon-btn {
+  display: inline-flex;
+  padding: 6px;
+  border-radius: 6px;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background-color 120ms, color 120ms;
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.icon-btn-danger:hover:not(:disabled) {
+  background: var(--color-danger-soft);
   color: var(--color-danger);
 }
 
-.back-link {
-  display: inline-block;
-  margin-bottom: 15px;
-  color: var(--color-blue);
-  font-size: 0.875rem;
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
