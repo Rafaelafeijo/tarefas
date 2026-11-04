@@ -23,6 +23,7 @@ export function TaskForm({ mode, task }: TaskFormProps) {
   const [titulo, setTitulo] = useState(task?.titulo ?? "");
   const [descricao, setDescricao] = useState(task?.descricao ?? "");
   const [dataCriacao, setDataCriacao] = useState(task ? toDateTimeInput(task.dataCriacao) : "");
+  const [dataEntrega, setDataEntrega] = useState(task?.dataEntrega ?? "");
   // The title error only appears after the user leaves the field or tries to submit.
   const [touched, setTouched] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -32,7 +33,7 @@ export function TaskForm({ mode, task }: TaskFormProps) {
     onSuccess: async () => {
       setSaved(true);
       setFeedback({ kind: "success", message: mode === "create" ? "Task created." : "Task updated." });
-      await utils.tasks.list.invalidate();
+      await utils.tasks.invalidate();
       // Short delay so the user sees the message before the page changes.
       setTimeout(() => router.push("/"), 800);
     },
@@ -44,7 +45,12 @@ export function TaskForm({ mode, task }: TaskFormProps) {
   const updateTask = trpc.tasks.update.useMutation(mutationOptions);
 
   const pending = createTask.isPending || updateTask.isPending;
-  const validation = taskInputSchema.safeParse({ titulo, descricao });
+  // An empty date input means "no due date", which the schema expresses as undefined.
+  const validation = taskInputSchema.safeParse({
+    titulo,
+    descricao,
+    dataEntrega: dataEntrega || undefined,
+  });
   const titleError = touched && !validation.success ? validation.error.issues[0]?.message : undefined;
   // New tasks get the current time from the server, so the date only applies when editing.
   const dateMissing = mode === "edit" && !dataCriacao;
@@ -112,28 +118,43 @@ export function TaskForm({ mode, task }: TaskFormProps) {
           />
         </div>
 
-        {mode === "edit" && (
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="dataCriacao" className={labelClass}>
-              Created on <span className="font-normal text-muted">(São Paulo time)</span>
+            <label htmlFor="dataEntrega" className={labelClass}>
+              Due date <span className="font-normal text-muted">(optional)</span>
             </label>
             <input
-              id="dataCriacao"
-              type="datetime-local"
-              className={`${fieldClass} sm:w-64`}
-              value={dataCriacao}
-              onChange={(event) => setDataCriacao(event.target.value)}
-              aria-invalid={touched && dateMissing}
-              aria-describedby={touched && dateMissing ? "dataCriacao-error" : undefined}
-              required
+              id="dataEntrega"
+              type="date"
+              className={fieldClass}
+              value={dataEntrega}
+              onChange={(event) => setDataEntrega(event.target.value)}
             />
-            {touched && dateMissing && (
-              <p id="dataCriacao-error" className="mt-1.5 text-[13px] text-danger">
-                Date and time are required
-              </p>
-            )}
           </div>
-        )}
+
+          {mode === "edit" && (
+            <div>
+              <label htmlFor="dataCriacao" className={labelClass}>
+                Created on <span className="font-normal text-muted">(São Paulo time)</span>
+              </label>
+              <input
+                id="dataCriacao"
+                type="datetime-local"
+                className={fieldClass}
+                value={dataCriacao}
+                onChange={(event) => setDataCriacao(event.target.value)}
+                aria-invalid={touched && dateMissing}
+                aria-describedby={touched && dateMissing ? "dataCriacao-error" : undefined}
+                required
+              />
+              {touched && dateMissing && (
+                <p id="dataCriacao-error" className="mt-1.5 text-[13px] text-danger">
+                  Date and time are required
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="flex justify-end gap-2">
           <Link href="/" className="btn btn-ghost">

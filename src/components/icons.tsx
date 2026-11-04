@@ -1,4 +1,4 @@
-// Inline SVGs: five icons don't justify an icon library dependency.
+// Inline SVGs: a handful of icons doesn't justify an icon library dependency.
 type IconProps = { size?: number; className?: string };
 
 function Icon({ size = 16, className, children }: IconProps & { children: React.ReactNode }) {
@@ -29,6 +29,31 @@ export const CheckIcon = (props: IconProps) => (
 export const ListIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+  </Icon>
+);
+
+export const CircleIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+  </Icon>
+);
+
+export const CircleCheckIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m8.5 12 2.5 2.5 4.5-5" />
+  </Icon>
+);
+
+export const ArchiveIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 4h18v4H3zM5 8v12h14V8M10 12h4" />
+  </Icon>
+);
+
+export const RestoreIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" />
   </Icon>
 );
 

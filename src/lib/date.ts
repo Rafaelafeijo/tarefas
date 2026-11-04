@@ -15,8 +15,17 @@ export function fromDateTimeInput(value: string) {
 }
 
 // Built by hand: Intl's date and time output can differ between browsers and Node.
+export function formatDate(date: string) {
+  const [year, month, day] = date.split("-");
+  return `${MONTHS[Number(month) - 1]} ${Number(day)}, ${year}`;
+}
+
 export function formatDateTime(iso: string) {
   const [date, time] = toDateTimeInput(iso).split("T");
-  const [year, month, day] = date.split("-");
-  return `${MONTHS[Number(month) - 1]} ${Number(day)}, ${year}, ${time}`;
+  return `${formatDate(date)}, ${time}`;
+}
+
+// "YYYY-MM-DD" strings sort like dates, so plain comparison is enough.
+export function isOverdue(dueDate: string) {
+  return dueDate < toDateTimeInput(new Date().toISOString()).slice(0, 10);
 }

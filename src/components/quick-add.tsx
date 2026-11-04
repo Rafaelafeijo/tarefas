@@ -19,7 +19,7 @@ export function QuickAdd({ onFeedback }: { onFeedback: (feedback: FeedbackState)
       setTitulo((current) => current || variables.titulo);
       onFeedback({ kind: "error", message: errorMessage(error) });
     },
-    onSettled: () => utils.tasks.list.invalidate(),
+    onSettled: () => utils.tasks.invalidate(),
   });
 
   function handleSubmit(event: FormEvent) {
