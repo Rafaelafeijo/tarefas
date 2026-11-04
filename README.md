@@ -10,9 +10,11 @@ Add a task by typing one line, scroll through the list without ever hitting a "n
 
 - **Add tasks without leaving the list.** Type a title, press Enter, and keep typing the next one: focus stays in the field, even while the previous task is saving. The full form is one click away when you want a description.
 - **Content on first paint.** The list arrives as HTML from the server, so there is no loading spinner on page load and no empty flash.
-- **Infinite scroll you can see working.** It starts with 100 fictional tasks and loads 10 at a time, with a live "Showing 20 of 100 tasks" counter.
+- **Complete, archive and filter.** One click marks a task as done. Pending, Completed and Archived each have their own view in the sidebar, with live counts and a URL you can link to.
+- **Due dates that stand out.** Tasks can have a due date, and pending tasks past it turn red. A finished task is never marked late.
+- **Infinite scroll you can see working.** Each view loads 10 tasks at a time, with a live "Showing 20 of 75 tasks" counter.
 - **Pagination that survives deletions.** Pages are anchored to task ids, so removing a task never skips or repeats rows, even when the removed task is the one the next page starts from.
-- **Editable date and time.** Every task shows when it was created, down to the minute, and the edit form can change it.
+- **Editable creation date and time.** Every task shows when it was created, down to the minute, and the edit form can change it.
 - **One source of truth for validation.** The form and the API use the same Zod schema, so they can't disagree. A title made only of spaces is rejected on both sides.
 - **Errors people can read.** Validation failures reach the UI as "Title is required", not as a JSON dump. Editing a task someone deleted in another tab says so, and the list corrects itself. If the connection drops, the app says that too, and quick add gives your text back.
 - **A real 404.** An unknown task id returns HTTP 404 with a friendly page, not a 200 with an error message inside.
@@ -21,9 +23,13 @@ Add a task by typing one line, scroll through the list without ever hitting a "n
 
 ## Screenshots
 
-| Editing, with date and time | Validation in the form | Mobile |
-| --- | --- | --- |
-| ![Edit form with title, description and date and time fields](docs/screenshots/edit.png) | ![Form showing the message Title is required](docs/screenshots/form.png) | ![Task list on a phone-sized screen](docs/screenshots/mobile.png) |
+| Completed view | Editing, with due date and creation date |
+| --- | --- |
+| ![Completed tasks, checked and struck through, with the Completed view active in the sidebar](docs/screenshots/completed.png) | ![Edit form with title, description, due date and creation date fields](docs/screenshots/edit.png) |
+
+| Validation in the form | Mobile |
+| --- | --- |
+| ![Form showing the message Title is required](docs/screenshots/form.png) | ![Task list on a phone-sized screen](docs/screenshots/mobile.png) |
 
 ## Quick start
 
@@ -34,7 +40,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. The app starts with 100 fictional tasks, so the list and infinite scroll work right away.
+Open http://localhost:3000. The app starts with 100 fictional tasks (75 pending, 20 completed and 5 archived), so every view and infinite scroll work right away.
 
 For a production build:
 
@@ -88,8 +94,10 @@ src/
 │   ├── feedback.tsx              # success and error toast
 │   ├── icons.tsx                 # inline SVG icons
 │   ├── quick-add.tsx             # one-line task creation in the list
+│   ├── sidebar-nav.tsx           # status views with live counts
 │   ├── task-form.tsx             # shared create and edit form
-│   └── task-list.tsx             # list, delete, infinite scroll
+│   ├── task-list.tsx             # one status view, with infinite scroll
+│   └── task-row.tsx              # one task: complete, archive, delete
 ├── lib/
 │   ├── date.ts                   # date display and date input conversion
 │   ├── error-message.ts          # readable message for connection failures
@@ -109,6 +117,8 @@ src/
 | `titulo` | `string` | Required, trimmed |
 | `descricao` | `string` | Optional |
 | `dataCriacao` | `string` | ISO-8601 timestamp, set by the server on creation and editable afterwards |
+| `dataEntrega` | `string` | Optional due date, `YYYY-MM-DD` |
+| `status` | `string` | `pendente` (default), `concluida` or `arquivada` |
 
 ## API
 
@@ -116,13 +126,15 @@ Every procedure lives under `tasks`, at `/api/trpc/tasks.<procedure>`.
 
 | Procedure | Type | Input | Errors |
 | --- | --- | --- | --- |
-| `list` | query | `cursor?`, `limit?` (default 10, max 50) | `BAD_REQUEST` |
+| `list` | query | `cursor?`, `limit?` (default 10, max 50), `status?` (default `pendente`) | `BAD_REQUEST` |
+| `counts` | query | none | none |
 | `getById` | query | `id` | `NOT_FOUND` |
-| `create` | mutation | `titulo`, `descricao?` | `BAD_REQUEST` |
-| `update` | mutation | `id`, `titulo`, `descricao?`, `dataCriacao?` | `BAD_REQUEST`, `NOT_FOUND` |
+| `create` | mutation | `titulo`, `descricao?`, `dataEntrega?` | `BAD_REQUEST` |
+| `update` | mutation | `id`, `titulo`, `descricao?`, `dataEntrega?`, `dataCriacao?` | `BAD_REQUEST`, `NOT_FOUND` |
+| `setStatus` | mutation | `id`, `status` | `BAD_REQUEST`, `NOT_FOUND` |
 | `delete` | mutation | `id` | `NOT_FOUND` |
 
-`list` returns `{ items, nextCursor, total }`. In `update`, leaving out `descricao` clears it, and leaving out `dataCriacao` keeps the current date.
+`list` returns `{ items, nextCursor, total }`, where `total` counts the tasks in that status. In `update`, leaving out `descricao` or `dataEntrega` clears it, and leaving out `dataCriacao` keeps the current date. The status never changes through `update`.
 
 Try it from a terminal while the app is running:
 
@@ -130,7 +142,12 @@ Try it from a terminal while the app is running:
 # Create a task
 curl -X POST http://localhost:3000/api/trpc/tasks.create \
   -H 'content-type: application/json' \
-  -d '{"titulo":"Write the docs"}'
+  -d '{"titulo":"Write the docs","dataEntrega":"2030-01-31"}'
+
+# Complete the task with id 100
+curl -X POST http://localhost:3000/api/trpc/tasks.setStatus \
+  -H 'content-type: application/json' \
+  -d '{"id":"100","status":"concluida"}'
 
 # Try without a title: returns 400 with "Title is required"
 curl -X POST http://localhost:3000/api/trpc/tasks.create \
@@ -152,6 +169,10 @@ curl -G http://localhost:3000/api/trpc/tasks.list \
 | ISO date strings | Travel through JSON unchanged, with no superjson or `Date` transformer | Dates must be parsed before display |
 | Schema in its own file | The form imports it without pulling server code into the browser | One more file |
 | Cursor based on increasing ids | Stable pages, even if the cursor's own task was deleted | The list follows creation order, so editing a task's date doesn't move its row |
+| Status views instead of sorting | Filtering keeps the id cursor working, while sorting by due date or priority would need a compound cursor | No custom sort order |
+| View in the URL (`?status=concluida`) | Views are server-rendered, linkable and survive a reload | None worth noting at this size |
+| A status field, not an `archived` flag | One field can't hold contradictory states such as completed and pending at once | Archiving a completed task forgets it was completed; restoring returns it to pending |
+| Due date without time | A due day has no time, so it can't shift between time zones | No deadlines to the hour |
 | Fixed time zone and hand-built date text | Server and browser render the same text, avoiding hydration errors | Everyone sees São Paulo time |
 | Quick add input is never disabled | A disabled input loses focus, and anything typed next would be lost | Several requests can run at once, which the store handles fine |
 | `networkMode: "always"` in TanStack Query | Offline requests fail with a message instead of pausing silently | No automatic resume when the connection returns |
@@ -159,7 +180,7 @@ curl -G http://localhost:3000/api/trpc/tasks.list \
 | `loading.tsx` only in the `(list)` route group | At the root it would also wrap the edit page, turning missing-task 404s into 200s | The edit page has no skeleton |
 | `postcss` override in `package.json` | Next 15 pins a version with known advisories; this moves to a patched one without leaving Next 15 | Must be reviewed when Next is upgraded |
 | Portuguese field names | `titulo`, `descricao` and `dataCriacao` are the domain vocabulary | Mixed with English code |
-| No component or icon library | Tokens in `globals.css` and five inline SVGs cover this UI | Components are written by hand |
+| No component or icon library | Tokens in `globals.css` and a few inline SVGs cover this UI | Components are written by hand |
 
 ## User-facing states
 
@@ -168,26 +189,27 @@ curl -G http://localhost:3000/api/trpc/tasks.list \
 | Opening the list | Skeleton rows while the page loads | `(list)/loading.tsx` |
 | Saving | Button disabled, showing "Saving..." | `task-form.tsx` |
 | Quick add in progress | "Saving..." beside the input, which stays available | `quick-add.tsx` |
-| Deleting | That row's delete button is disabled | `task-list.tsx` |
+| Deleting or changing status | That row's buttons are disabled | `task-row.tsx` |
+| Overdue | Due date in red, also announced to screen readers | `task-row.tsx` |
 | Loading more | "Loading more..." below the list | `task-list.tsx` |
 | End of list | "You've reached the end" | `task-list.tsx` |
 | Success | Toast that disappears after 4 seconds | `feedback.tsx` |
 | Validation error | "Title is required" or "Date and time are required" under the field, or a toast on quick add | `task-form.tsx`, `quick-add.tsx` |
 | Server error | Toast with the API message, such as "Task 24 not found" | `feedback.tsx` |
 | Connection failure | "Could not reach the server..." | `error-message.ts` |
-| Empty list | A sentence pointing to quick add and the full form | `task-list.tsx` |
+| Empty view | A sentence, pointing to quick add and the full form in Pending | `task-list.tsx` |
 | Not found | HTTP 404 with a link back to the list | `not-found.tsx` |
 
 ## Accessibility
 
 - Every form field has a label, and validation errors are linked to their input with `aria-describedby`.
 - Toasts use `role="status"` for success and `role="alert"` for errors, so screen readers announce them.
-- Icon buttons have descriptive labels, such as "Delete Update dependencies".
+- Icon buttons have descriptive labels, such as "Delete Update the release notes", and the completion control is exposed as a checkbox.
 - Row actions also appear on keyboard focus, and focus outlines are visible throughout.
 
 ## How it was verified
 
-The main flows were exercised in a real browser against the production build: infinite scroll through all 100 tasks, quick add with real keystrokes, create, edit (including date and time), delete, validation and server errors, an offline connection, a slow connection, the 404 status and the 375px layout, with no console or hydration errors. These checks were one-off scripts and are not part of this repository. Adding them as automated tests is the first item below.
+The main flows were exercised in a real browser against the production build: infinite scroll through whole views, completing, archiving and restoring, status filters and counts, quick add with real keystrokes, create, edit (including both dates), overdue rules, delete, validation and server errors, an offline connection, a slow connection, the 404 status and the 375px layout, with no console or hydration errors. These checks were one-off scripts and are not part of this repository. Adding them as automated tests is the first item below.
 
 ## Known limitations
 
@@ -199,7 +221,7 @@ The main flows were exercised in a real browser against the production build: in
 
 1. Add automated tests for the router and the main browser flows.
 2. Persist tasks in a database, keeping the store's small interface.
-3. Add a status field, making the row marker a working checkbox.
+3. Add sorting by due date, with a compound cursor.
 4. Add auth with a `protectedProcedure` and a session in the tRPC context.
-5. Add optimistic updates, so deletions feel instant on slow networks.
+5. Add optimistic updates, so completing and deleting feel instant on slow networks.
 6. Translate the interface.
